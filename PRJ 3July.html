@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Home - World Cup Edition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), 
+                        url('https://images.unsplash.com/photo-1574629810360-7efbbe195018?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+            background-size: cover;
+            font-family: 'Orbitron', sans-serif;
+            color: white;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            padding: 40px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0,0,0,0.8);
+            text-align: center;
+            width: 350px;
+        }
+
+        h1 { font-size: 24px; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; }
+
+        .data-box { margin: 20px 0; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 15px; }
+        .val { color: #00ffcc; font-size: 28px; }
+
+        .control-box { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
+        
+        /* สวิตช์ดีไซน์ใหม่ */
+        .switch { position: relative; display: inline-block; width: 50px; height: 25px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .4s; border-radius: 25px; }
+        .slider:before { position: absolute; content: ""; height: 19px; width: 19px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #ffcc00; }
+        input:checked + .slider:before { transform: translateX(25px); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Control Panel ⚽</h1>
+        
+        <div class="data-box">
+            <div>Temperature</div>
+            <div class="val"><span id="temp">--</span> °C</div>
+        </div>
+        <div class="data-box">
+            <div>Humidity</div>
+            <div class="val"><span id="hum">--</span> %</div>
+        </div>
+
+        <div class="control-box">
+            <span>RELAY 1</span>
+            <label class="switch"><input type="checkbox" id="r1" onclick="pub('boi/relay1/cmd', this.checked)"> <span class="slider"></span></label>
+        </div>
+        <div class="control-box">
+            <span>RELAY 2</span>
+            <label class="switch"><input type="checkbox" id="r2" onclick="pub('boi/relay2/cmd', this.checked)"> <span class="slider"></span></label>
+        </div>
+    </div>
+
+    <script>
+        const client = new Paho.MQTT.Client("broker.hivemq.com", 8000, "client_" + parseInt(Math.random()*1000));
+        client.onMessageArrived = (m) => {
+            if(m.destinationName === "boi/esp32/temperature") document.getElementById("temp").innerText = m.payloadString;
+            if(m.destinationName === "boi/esp32/humidity") document.getElementById("hum").innerText = m.payloadString;
+        };
+        client.connect({onSuccess: () => {
+            client.subscribe("boi/esp32/#");
+        }});
+        function pub(topic, state) {
+            let msg = new Paho.MQTT.Message(state ? "ON" : "OFF");
+            msg.destinationName = topic;
+            client.send(msg);
+        }
+    </script>
+</body>
+</html>
